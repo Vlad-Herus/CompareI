@@ -6,12 +6,12 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-namespace Test3
+namespace CompareI
 {
     class SelectedItemUtil
     {
 
-        public static IEnumerable<string> GetFullFilePath(IServiceProvider serviceProvider)
+        public IEnumerable<string> GetFullFilePath(IServiceProvider serviceProvider)
         {
             var selectionMonitor = serviceProvider.GetService(typeof(SVsShellMonitorSelection)) as IVsMonitorSelection;
             if (selectionMonitor == null)
@@ -22,6 +22,12 @@ namespace Test3
             }
 
             int hr = selectionMonitor.GetCurrentSelection(out IntPtr hierarchyPtr, out uint itemid, out IVsMultiItemSelect multiSelect, out IntPtr containerPtr);
+
+            if (hierarchyPtr == IntPtr.Zero)
+            {
+                return Enumerable.Empty<string>();
+            }
+
             if (IntPtr.Zero != containerPtr)
             {
                 Marshal.Release(containerPtr);
@@ -37,35 +43,21 @@ namespace Test3
                     VSITEMSELECTION[] selectedItems = new VSITEMSELECTION[count];
                     var sel = multiSelect.GetSelectedItems((uint)__VSGSIFLAGS.GSI_fOmitHierPtrs, count, selectedItems);
 
-                    foreach (var selectedItem in selectedItems)
-                    {
-
-                        int n = 22 + 12;
-                    }
                     //multiple selection
-                    return return Enumerable.Empty<string>();
+                    return selectedItems.Select(info => GetItemPath(hierarchyPtr, info.itemid));
+                }
+                else
+                {
+                    return Enumerable.Empty<string>();
                 }
             }
             else
             {
-
+                return new string[] { GetItemPath(hierarchyPtr, itemid) };
             }
-
-            if (hierarchyPtr != IntPtr.Zero)
-            {
-                IVsProject project = Marshal.GetUniqueObjectForIUnknown(hierarchyPtr) as IVsProject;
-                string itemFullPath = null;
-                project?.GetMkDocument(itemid, out itemFullPath);
-
-                return itemFullPath;
-
-            }
-
-
-            return return Enumerable.Empty<string>();
         }
 
-        static string GetItemPath(IntPtr hirarchryPtr, uint temId)
+        string GetItemPath(IntPtr hirarchryPtr, uint temId)
         {
             IVsProject project = Marshal.GetUniqueObjectForIUnknown(hirarchryPtr) as IVsProject;
             string itemFullPath = null;

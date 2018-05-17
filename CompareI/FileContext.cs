@@ -1,11 +1,15 @@
 ﻿using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Globalization;
+using System.IO;
 using System.Runtime.InteropServices;
+using System.Linq;
 
-namespace Test3
+namespace CompareI
 {
     /// <summary>
     /// Command handler
@@ -13,9 +17,9 @@ namespace Test3
     [ProvideAutoLoad("f1536ef8-92ec-443c-9ed7-fdadf150da82")]
     [PackageRegistration(UseManagedResourcesOnly = true)]
     [Guid(SolutionMenuContextPackage.PackageGuidString)]
-    internal sealed class FileContext 
+    internal sealed class FileContext
     {
-        private System.Collections.Specialized.StringCollection _exts;
+        const string SUPPORTED_EXT = ".sql";
         /// <summary>
         /// Command ID.
         /// </summary>
@@ -31,6 +35,9 @@ namespace Test3
         /// </summary>
         private readonly Package package;
 
+        private readonly SelectedItemUtil m_SelectedItemUtil;
+        private readonly SqlClipboard m_SqlClipboard;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="FileContext"/> class.
         /// Adds our command handlers for menu (commands must exist in the command table file)
@@ -44,28 +51,36 @@ namespace Test3
             }
 
             this.package = package;
-            _exts =  GlobalSettings.Default.EXTENS_FILTER;
+
+            m_SelectedItemUtil = new SelectedItemUtil();
+            m_SqlClipboard = new SqlClipboard();
 
             OleMenuCommandService commandService = this.ServiceProvider.GetService(typeof(IMenuCommandService)) as OleMenuCommandService;
             if (commandService != null)
             {
                 var menuCommandID = new CommandID(CommandSet, CommandId);
-                 OleMenuCommand menuItem = new OleMenuCommand(this.MenuItemCallback, menuCommandID);
-                 menuItem.BeforeQueryStatus += MenuItem_BeforeQueryStatus;
+                OleMenuCommand menuItem = new OleMenuCommand(this.MenuItemCallback, menuCommandID);
+                menuItem.BeforeQueryStatus += MenuItem_BeforeQueryStatus;
                 commandService.AddCommand(menuItem);
-            }           
+            }
         }
 
         private void MenuItem_BeforeQueryStatus(object sender, EventArgs e)
         {
-            OleMenuCommand menuCommand = sender as OleMenuCommand;
-            if (menuCommand != null)
+            if (sender is OleMenuCommand menuCommand)
             {
-                string itemFullPath = SelectedItemUtil.GetFullFilePath(ServiceProvider);
-                string itemExt = itemFullPath?.Substring(itemFullPath.LastIndexOf('.') + 1);
+                var selectedItems = m_SelectedItemUtil.GetFullFilePath(ServiceProvider);
 
-                menuCommand.Visible = _exts.Contains(itemExt);
-            }            
+                if (selectedItems.All(path =>
+                    string.Equals(Path.GetExtension(path), SUPPORTED_EXT, StringComparison.CurrentCultureIgnoreCase)))
+                {
+                    menuCommand.Visible = true;
+                }
+                else
+                {
+                    menuCommand.Visible = false;
+                }
+            }
         }
 
         /// <summary>
@@ -106,19 +121,9 @@ namespace Test3
         /// <param name="e">Event args.</param>
         private void MenuItemCallback(object sender, EventArgs e)
         {
-            //TODO: Put your code here
+            var selectedItems = m_SelectedItemUtil.GetFullFilePath(ServiceProvider);
+            m_SqlClipboard.CopyContents(selectedItems);
 
-            string message = string.Format(CultureInfo.CurrentCulture, "Inside {0}.MenuItemCallback()", this.GetType().FullName);
-            string title = "FileContext";
-
-            // Show a message box to prove we were here
-            VsShellUtilities.ShowMessageBox(
-                this.ServiceProvider,
-                message,
-                title,
-                OLEMSGICON.OLEMSGICON_INFO,
-                OLEMSGBUTTON.OLEMSGBUTTON_OK,
-                OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
         }
     }
 }

@@ -3,8 +3,12 @@ using System.ComponentModel.Design;
 using System.Globalization;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using EnvDTE;
 
-namespace Test3
+namespace CompareI
 {
     /// <summary>
     /// Command handler
@@ -26,6 +30,11 @@ namespace Test3
         /// </summary>
         private readonly Package package;
 
+        private readonly SelectedItemUtil m_SelectedItemUtil;
+        private readonly RegistryMap m_RegistryMap;
+        private readonly BeyondCompareRunner m_BeyondCompareRunner;
+
+
         /// <summary>
         /// Initializes a new instance of the <see cref="SolutionMenuContext"/> class.
         /// Adds our command handlers for menu (commands must exist in the command table file)
@@ -39,13 +48,39 @@ namespace Test3
             }
 
             this.package = package;
+            m_SelectedItemUtil = new SelectedItemUtil();
+            m_RegistryMap = new RegistryMap();
+            m_BeyondCompareRunner = new BeyondCompareRunner();
 
             OleMenuCommandService commandService = this.ServiceProvider.GetService(typeof(IMenuCommandService)) as OleMenuCommandService;
             if (commandService != null)
             {
                 var menuCommandID = new CommandID(CommandSet, CommandId);
-                var menuItem = new MenuCommand(this.MenuItemCallback, menuCommandID);
+                OleMenuCommand menuItem = new OleMenuCommand(this.MenuItemCallback, menuCommandID);
+                menuItem.BeforeQueryStatus += MenuItem_BeforeQueryStatus;
+
                 commandService.AddCommand(menuItem);
+            }
+        }
+
+        private void MenuItem_BeforeQueryStatus(object sender, EventArgs e)
+        {
+            if (sender is OleMenuCommand menuCommand)
+            {
+                DTE dte = (DTE)ServiceProvider.GetService(typeof(DTE));
+                string solutionPath = dte.Solution.FullName;
+
+                var presentInMap = m_RegistryMap.SolutionMap.Any(item =>
+                item.Key.Equals(solutionPath, StringComparison.CurrentCultureIgnoreCase));
+
+                if (presentInMap)
+                {
+                    menuCommand.Visible = true;
+                }
+                else
+                {
+                    menuCommand.Visible = false;
+                }
             }
         }
 
@@ -89,17 +124,16 @@ namespace Test3
         {
             //TODO: Put your code here
 
-            string message = string.Format(CultureInfo.CurrentCulture, "Inside {0}.MenuItemCallback()", this.GetType().FullName);
-            string title = "SolutionMenuContext";
+            DTE dte = (DTE)ServiceProvider.GetService(typeof(DTE));
+            string solutionPath = dte.Solution.FullName;
+            var matches = m_RegistryMap.SolutionMap.Where(item =>
+                item.Key.Equals(solutionPath, StringComparison.CurrentCultureIgnoreCase));
 
-            // Show a message box to prove we were here
-            VsShellUtilities.ShowMessageBox(
-                this.ServiceProvider,
-                message,
-                title,
-                OLEMSGICON.OLEMSGICON_INFO,
-                OLEMSGBUTTON.OLEMSGBUTTON_OK,
-                OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
+            if (matches.Count() == 1)
+            {
+                m_BeyondCompareRunner.LaunchNamedComparison(matches.First().Value);
+            }
+
         }
     }
 }

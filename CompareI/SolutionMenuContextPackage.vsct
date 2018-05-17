@@ -52,8 +52,9 @@
               <CommandFlag>DynamicVisibility</CommandFlag>
           If you do not want an image next to your command, remove the Icon node /> -->
       <Button guid="guidSolutionMenuContextPackageCmdSet" id="SolutionMenuContextId" type="Button">
+        <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
-          <ButtonText>Invoke SolutionMenuContext</ButtonText>
+          <ButtonText>Open Beyond Compare</ButtonText>
         </Strings>
       </Button>
       <Button guid="guidProjectGroupSet" id="cmdidFileContext" type="Button">
@@ -61,7 +62,7 @@
         <!--<Icon guid="guidImages" id="bmpPic1" />-->
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
-          <ButtonText>Invoke FileContext</ButtonText>
+          <ButtonText>Copy Sql Content</ButtonText>
         </Strings>
       </Button>
     </Buttons>

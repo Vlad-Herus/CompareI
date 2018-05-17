@@ -1,8 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
   <Metadata>
-    <Identity Id="Test3.3c3de2b4-1d49-4b7d-9e07-bb484bb7f1ba" Version="1.0" Language="en-US" Publisher="Company" />
-    <DisplayName>Test3</DisplayName>
+    <Identity Id="CompareI.3c3de2b4-1d49-4b7d-9e07-bb484bb7f1ba" Version="1.0" Language="en-US" Publisher="Company" />
+    <DisplayName>CompareI</DisplayName>
     <Description>Empty VSIX Project.</Description>
   </Metadata>
   <Installation>
