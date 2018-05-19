@@ -13,10 +13,12 @@ namespace CompareI
         public void CopyContents(IEnumerable<string> sqlFiles)
         {
             List<string> lines = new List<string>();
-
+            int scriptId = 0;
             foreach (var file in sqlFiles.OrderBy(s=>s))
             {
+                lines.Add($"-- Script number {scriptId++}");
                 lines.AddRange(File.ReadAllLines(file));
+                lines.Add("\n\n\n");
             }
 
             var line = lines.Aggregate((s1, s2) => s1 + "\n" + s2);
